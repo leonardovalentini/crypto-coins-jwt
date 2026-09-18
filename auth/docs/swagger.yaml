@@ -1,0 +1,164 @@
+definitions:
+  dto.Response:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.ResponseCreated:
+    properties:
+      id:
+        type: integer
+    type: object
+  dto.VerifyResponse:
+    properties:
+      id:
+        type: string
+    type: object
+  helpers.HttpError:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This API allows for user registration and validation.
+  title: Auth API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Logs in a user using form data and sets an auth cookie
+      parameters:
+      - description: username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: session_token=abcde12345; Path=/; HttpOnly; Max-Age=1800
+              type: string
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "401":
+          description: Invalid username or password
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Unexpected error from database
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      summary: Log in and set auth cookie
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Clear auth cookie
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "401":
+          description: Session cookie not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Logout user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Register with username and password form fields
+      parameters:
+      - description: username
+        in: formData
+        name: username
+        required: true
+        type: string
+      - description: password
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ResponseCreated'
+        "401":
+          description: Invalid username or password
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "409":
+          description: The user is already registered.
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Unexpected error from database<br>An error occurred while encrypting
+            the password.
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      summary: Register new user
+      tags:
+      - auth
+  /auth/verify:
+    get:
+      consumes:
+      - application/json
+      description: Verify Auth cookie and return user id
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VerifyResponse'
+        "401":
+          description: 'Session cookie not found<br>Unauthorized: No session found'
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Verify Auth cookie
+      tags:
+      - auth
+securityDefinitions:
+  CookieAuth:
+    in: cookie
+    name: session_token
+    type: apiKey
+swagger: "2.0"

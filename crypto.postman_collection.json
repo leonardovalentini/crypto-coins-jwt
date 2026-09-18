@@ -1,0 +1,466 @@
+{
+  "info": {
+    "_postman_id": "96daa24d-0aa3-443f-9004-e1068e0b3a23",
+    "name": "My Collection",
+    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "57186486",
+    "_collection_link": "https://go.postman.co/collection/57186486-96daa24d-0aa3-443f-9004-e1068e0b3a23?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "secret123",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/auth/logout",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "username",
+                  "value": "leo1",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "abcd1234",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/auth/verify",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "verify"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Swagger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/swagger/",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "swagger",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Crypto",
+      "item": [
+        {
+          "name": "UserCoin",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8181/api/user-coins",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8181",
+                  "path": [
+                    "api",
+                    "user-coins"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "New",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"coin\": \"ETH\",\r\n    \"coin_ref\": \"BTC\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8181/api/user-coins",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8181",
+                  "path": [
+                    "api",
+                    "user-coins"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"coin\": \"LDC\",\r\n    \"coin_ref\": \"ETH\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8181/api/user-coins/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8181",
+                  "path": [
+                    "api",
+                    "user-coins",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8181/api/user-coins/3",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8181",
+                  "path": [
+                    "api",
+                    "user-coins",
+                    "3"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Prices",
+          "item": [
+            {
+              "name": "GetPrices",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8181/api/prices?size=10&coin=ldc&start_date=2026-08-19T19:00:00Z",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8181",
+                  "path": [
+                    "api",
+                    "prices"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "10"
+                    },
+                    {
+                      "key": "coin",
+                      "value": "ldc"
+                    },
+                    {
+                      "key": "start_date",
+                      "value": "2026-08-19T19:00:00Z"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Jobs",
+          "item": [
+            {
+              "name": "BrokerPrices",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8181/jobs/broker-prices",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8181",
+                  "path": [
+                    "jobs",
+                    "broker-prices"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Swagger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8181/swagger/",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8181",
+              "path": [
+                "swagger",
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Brokers",
+      "item": [
+        {
+          "name": "CoinGecko",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-cg-demo-api-key",
+                "value": "x-cg-demo-api-key",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&symbols=btc",
+              "protocol": "https",
+              "host": [
+                "api",
+                "coingecko",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v3",
+                "simple",
+                "price"
+              ],
+              "query": [
+                {
+                  "key": "vs_currencies",
+                  "value": "usd"
+                },
+                {
+                  "key": "symbols",
+                  "value": "btc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CoinMarketCap",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-CMC_PRO_API_KEY",
+                "value": "X-CMC_PRO_API_KEY",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "https://pro-api.coinmarketcap.com/v1/tools/price-conversion?symbol=ldc&amount=1&convert=eth",
+              "protocol": "https",
+              "host": [
+                "pro-api",
+                "coinmarketcap",
+                "com"
+              ],
+              "path": [
+                "v1",
+                "tools",
+                "price-conversion"
+              ],
+              "query": [
+                {
+                  "key": "symbol",
+                  "value": "ldc"
+                },
+                {
+                  "key": "amount",
+                  "value": "1"
+                },
+                {
+                  "key": "convert",
+                  "value": "eth"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

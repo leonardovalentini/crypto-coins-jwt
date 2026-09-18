@@ -1,0 +1,555 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This API allows you to keep a historical record of your favorite cryptocurrencies.",
+        "title": "Crypto API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/prices": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Retrieve filtered and paginated historical price lists.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/xml"
+                ],
+                "tags": [
+                    "prices"
+                ],
+                "summary": "Get historical price lists",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number starting 0",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Page size",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "maxLength": 3,
+                        "minLength": 3,
+                        "type": "string",
+                        "default": "",
+                        "example": "btc",
+                        "description": "3-character code",
+                        "name": "coin",
+                        "in": "query"
+                    },
+                    {
+                        "maxLength": 3,
+                        "minLength": 3,
+                        "type": "string",
+                        "default": "",
+                        "example": "eth",
+                        "description": "3-character code",
+                        "name": "coin_ref",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "number",
+                        "example": 12.34,
+                        "description": "Price",
+                        "name": "price",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "default": "",
+                        "example": "2026-08-21T15:30:00Z",
+                        "description": "Start date (ISO-8601)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "default": "",
+                        "example": "2026-08-21T15:30:00Z",
+                        "description": "End date (ISO-8601)",
+                        "name": "end_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "",
+                        "example": "CoinGecko",
+                        "description": "Site",
+                        "name": "site",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PricesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "User id not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid price value\u003cbr\u003eInvalid start date value, should be in ISO format\u003cbr\u003eInvalid end date value, should be in ISO format\u003cbr\u003eThe coin symbol must be three chars\u003cbr\u003eThe coin reference must be three chars\u003cbr\u003eThe coin symbol must be three chars\u003cbr\u003eThe coin reference must be three chars\u003cbr\u003eThe price shold be a positive number\u003cbr\u003eThe start date should be before today\u003cbr\u003eThe end date should be before today\u003cbr\u003eThe start date should be before end date",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error\u003cbr\u003eUnexpected error from database",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user-coins": {
+            "get": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "returns all the coins configured by the user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/xml"
+                ],
+                "tags": [
+                    "user-coins"
+                ],
+                "summary": "Get user coins",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.UserCoinResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User id not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Adds a new currency configuration to the user's list.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/xml"
+                ],
+                "tags": [
+                    "user-coins"
+                ],
+                "summary": "Add user coin",
+                "parameters": [
+                    {
+                        "description": "Currency info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserCoinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.NewUserCoinResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body\u003cbr\u003eThe coin symbol must be three chars\u003cbr\u003eThe coin reference must be three chars",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "User id not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "The user has already added that coin",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "422": {
+                        "description": "The coin symbol must be three chars\u003cbr\u003eThe coin reference must be three chars",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user-coins/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Update currency configuration to the user's list.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/xml"
+                ],
+                "tags": [
+                    "user-coins"
+                ],
+                "summary": "Update user coin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Currency ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Currency info",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserCoinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserCoinResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body\u003cbr\u003eThe coin symbol must be three chars\u003cbr\u003eThe coin reference must be three chars",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "User id not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "The coin was not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "The user has already added that coin",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "422": {
+                        "description": "The coin symbol must be three chars\u003cbr\u003eThe coin reference must be three chars",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "CookieAuth": []
+                    }
+                ],
+                "description": "Delete currency configuration to the user's list.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/xml"
+                ],
+                "tags": [
+                    "user-coins"
+                ],
+                "summary": "Delete user coin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Currency ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmptyResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "User id not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "The coin was not found",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs/broker-prices": {
+            "get": {
+                "description": "Job to complete current currency prices from brokers.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/xml"
+                ],
+                "tags": [
+                    "prices"
+                ],
+                "summary": "Job to complete prices",
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/dto.EmptyResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Job is already running",
+                        "schema": {
+                            "$ref": "#/definitions/helpers.HttpError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.EmptyResponse": {
+            "type": "object"
+        },
+        "dto.NewUserCoinResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dto.PriceResponse": {
+            "type": "object",
+            "properties": {
+                "coin": {
+                    "type": "string",
+                    "example": "btc"
+                },
+                "coin_ref": {
+                    "type": "string",
+                    "example": "eth"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2026-08-19T18:33:34Z"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 12.34
+                },
+                "site": {
+                    "type": "string",
+                    "example": "CoinGecko"
+                }
+            }
+        },
+        "dto.PricesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.PriceResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "size": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "summary": {
+                    "$ref": "#/definitions/dto.SummaryResponse"
+                },
+                "total_items": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.SummaryResponse": {
+            "type": "object",
+            "properties": {
+                "coin": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "example": {
+                        "btc": 2,
+                        "eth": 3
+                    }
+                },
+                "coin_ref": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "example": {
+                        "ldc": 1,
+                        "usd": 4
+                    }
+                },
+                "site": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "example": {
+                        "CoinGecko": 4,
+                        "CoinMarketCap": 1
+                    }
+                }
+            }
+        },
+        "dto.UserCoinRequest": {
+            "type": "object",
+            "properties": {
+                "coin": {
+                    "type": "string",
+                    "example": "btc"
+                },
+                "coin_ref": {
+                    "type": "string",
+                    "example": "eth"
+                }
+            }
+        },
+        "dto.UserCoinResponse": {
+            "type": "object",
+            "properties": {
+                "coin": {
+                    "type": "string",
+                    "example": "btc"
+                },
+                "coin_ref": {
+                    "type": "string",
+                    "example": "eth"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "helpers.HttpError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "CookieAuth": {
+            "type": "apiKey",
+            "name": "session_token",
+            "in": "cookie"
+        }
+    }
+}

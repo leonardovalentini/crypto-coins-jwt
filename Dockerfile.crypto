@@ -1,0 +1,28 @@
+# Stage 1: Build binary
+FROM golang:alpine3.24 AS builder
+
+WORKDIR /app
+
+# Copy dependency manifests first to leverage Docker cache
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code and build
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o cryptoApp ./crypto/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o health-check ./health.go
+
+# Stage 2: Minimal final runtime image
+FROM alpine:latest
+# FROM scratch
+WORKDIR /
+
+# Install the system certificates needed for TLS verification
+RUN apk --no-cache add ca-certificates
+
+COPY --from=builder /app/cryptoApp /cryptoApp
+COPY --from=builder /app/health-check /health-check
+
+EXPOSE 8181
+# Command to execute
+CMD ["./cryptoApp"]

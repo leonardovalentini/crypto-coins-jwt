@@ -1,0 +1,594 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>app: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/leonardovalentini/crypto-coins/auth/app/app.go (0.0%)</option>
+				
+				<option value="file1">github.com/leonardovalentini/crypto-coins/auth/domain/UserDb.go (100.0%)</option>
+				
+				<option value="file2">github.com/leonardovalentini/crypto-coins/auth/handler/authHandler.go (100.0%)</option>
+				
+				<option value="file3">github.com/leonardovalentini/crypto-coins/auth/main.go (0.0%)</option>
+				
+				<option value="file4">github.com/leonardovalentini/crypto-coins/auth/service/authService.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package app
+
+import (
+        "crypto/rand"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        "time"
+
+        "github.com/gorilla/mux"
+        "github.com/jmoiron/sqlx"
+        "github.com/leonardovalentini/crypto-coins/auth/docs"
+        "github.com/leonardovalentini/crypto-coins/auth/domain"
+        "github.com/leonardovalentini/crypto-coins/auth/handler"
+        "github.com/leonardovalentini/crypto-coins/auth/service"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+        "github.com/leonardovalentini/crypto-coins/lib/middleware"
+        httpSwagger "github.com/swaggo/http-swagger"
+)
+
+func sanityCheck() <span class="cov0" title="0">{
+        envProps := []string{
+                "SERVER_ADDRESS",
+                "SERVER_PORT",
+                "DB_USER",
+                "DB_PASSWORD",
+                "DB_HOST",
+                "DB_PORT",
+                "DB_NAME",
+        }
+        for _, k := range envProps </span><span class="cov0" title="0">{
+                if os.Getenv(k) == "" </span><span class="cov0" title="0">{
+                        logger.Fatal(fmt.Sprintf("Environment variable %s not defined. Terminating application...", k))
+                }</span>
+        }
+}
+
+// @title                                                Auth API
+// @version                                        1.0
+// @description                                This API allows for user registration and validation.
+// @securityDefinitions.apikey        CookieAuth
+// @in                                                        cookie
+// @name                                                session_token
+// @host                                                localhost:8080
+func Start() <span class="cov0" title="0">{
+        sanityCheck()
+
+        dbClient := getDbClient()
+        defer dbClient.Close()
+
+        UserRepositoryDb := domain.NewUserRepositoryDb(dbClient)
+        ah := handler.NewAuthHandler(service.NewAuthService(UserRepositoryDb, rand.Read, time.Now))
+
+        router := mux.NewRouter()
+        router.Use(helpers.RecoveryMiddleware)
+        router.Use(middleware.RequestIDMiddleware)
+        router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusOK)
+                w.Write([]byte("OK"))
+        }</span>)
+        <span class="cov0" title="0">router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+        router.Use(logger.LoggingMiddleware())
+
+        ah.RegisterRoutes(router)
+
+        address := os.Getenv("SERVER_ADDRESS")
+        port := os.Getenv("SERVER_PORT")
+
+        docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", address, port)
+
+        logger.Info(fmt.Sprintf("Starting server on %s:%s ...", address, port))
+        logger.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), router).Error())</span>
+
+}
+
+func getDbClient() *sqlx.DB <span class="cov0" title="0">{
+        dbUser := os.Getenv("DB_USER")
+        dbPasswd := os.Getenv("DB_PASSWORD")
+        dbAddr := os.Getenv("DB_HOST")
+        dbPort := os.Getenv("DB_PORT")
+        dbName := os.Getenv("DB_NAME")
+
+        dataSource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPasswd, dbAddr, dbPort, dbName)
+        client, err := sqlx.Open("mysql", dataSource)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Error opening database: %v", err)
+        }</span>
+        // See "Important settings" section.
+        <span class="cov0" title="0">client.SetConnMaxLifetime(time.Minute * 3)
+        client.SetMaxOpenConns(10)
+        client.SetMaxIdleConns(10)
+
+        if err = client.Ping(); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Database unreachable: %v", err)
+        }</span>
+        <span class="cov0" title="0">logger.Info("Connected to MySQL successfully!")
+        return client</span>
+
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package domain
+
+import (
+        "context"
+        "database/sql"
+
+        _ "github.com/go-sql-driver/mysql"
+        "github.com/jmoiron/sqlx"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+type UserRepositoryDb struct {
+        client *sqlx.DB
+}
+
+func NewUserRepositoryDb(client *sqlx.DB) UserRepository <span class="cov8" title="1">{
+        return &amp;UserRepositoryDb{client: client}
+}</span>
+
+func (d *UserRepositoryDb) FindByUsername(ctx context.Context, username string) (*User, error) <span class="cov8" title="1">{
+        var err error
+        var user User
+
+        query := "SELECT id, username, password FROM users WHERE username = ?"
+
+        err = d.client.GetContext(ctx, &amp;user, query, username)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt := logger.NewLogger(ctx)
+                loggerWithCxt.Error("Error while creating new user: " + err.Error())
+                if err == sql.ErrNoRows </span><span class="cov8" title="1">{
+                        return nil, errs.NewAuthenticationError("Invalid username or password")
+                }</span>
+                <span class="cov8" title="1">return nil, errs.NewUnexpectedError("Unexpected error from database")</span>
+        }
+
+        <span class="cov8" title="1">return &amp;user, nil</span>
+}
+
+func (d *UserRepositoryDb) Save(ctx context.Context, u User) (*User, error) <span class="cov8" title="1">{
+        loggerWithCxt := logger.NewLogger(ctx)
+        query := "INSERT INTO users (username, password) values (?, ?)"
+
+        result, err := d.client.ExecContext(ctx, query, u.Username, u.Password)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error while creating new user: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error while getting last insert id for new user: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+        <span class="cov8" title="1">u.Id = int(id)
+
+        return &amp;u, nil</span>
+}
+
+func (d *UserRepositoryDb) CheckIfUsernameExists(ctx context.Context, username string) (*bool, error) <span class="cov8" title="1">{
+        var exists bool
+        query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)`
+
+        err := d.client.GetContext(ctx, &amp;exists, query, username)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;exists, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handler
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+        "github.com/leonardovalentini/crypto-coins/auth/dto"
+        "github.com/leonardovalentini/crypto-coins/auth/service"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+)
+
+type AuthHandler struct {
+        service service.AuthService
+}
+
+func NewAuthHandler(service service.AuthService) *AuthHandler <span class="cov8" title="1">{
+        return &amp;AuthHandler{service: service}
+}</span>
+
+func (h *AuthHandler) RegisterRoutes(router *mux.Router) <span class="cov8" title="1">{
+        authRouter := router.PathPrefix("/auth").Subrouter()
+
+        authRouter.
+                HandleFunc("/login", h.Login).
+                Methods(http.MethodPost).
+                Name("Login")
+        authRouter.
+                HandleFunc("/register", h.Register).
+                Methods(http.MethodPost).
+                Name("Register")
+        authRouter.
+                HandleFunc("/verify", h.Verify).
+                Methods(http.MethodGet).
+                Name("Verify")
+        authRouter.
+                HandleFunc("/logout", h.Logout).
+                Methods(http.MethodPost).
+                Name("Logout")
+}</span>
+
+// Login godoc
+//
+//        @Summary                Log in and set auth cookie
+//        @Description        Logs in a user using form data and sets an auth cookie
+//        @Tags                        auth
+//        @Accept                        multipart/form-data
+//        @Produce                json,xml
+//        @Param                        username        formData        string        true        "username"
+//        @Param                        password        formData        string        true        "password"
+//        @Success                200                        {object}        dto.Response
+//        @Header                        200                        {string}        Set-Cookie                        "session_token=abcde12345; Path=/; HttpOnly; Max-Age=1800"
+//        @Failure                401                        {object}        helpers.HttpError        "Invalid username or password"
+//        @Failure                500                        {object}        helpers.HttpError        "Unexpected error from database"
+//        @Router                        /auth/login [post]
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        username := r.FormValue("username")
+        password := r.FormValue("password")
+
+        cookie, err := h.service.Login(ctx, username, password)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">http.SetCookie(w, cookie)
+        helpers.WriteResponse(w, r, http.StatusOK, dto.Response{Message: "OK"})</span>
+}
+
+// Register godoc
+//
+//        @Summary                Register new user
+//        @Description        Register with username and password form fields
+//        @Tags                        auth
+//        @Accept                        multipart/form-data
+//        @Produce                json,xml
+//        @Param                        username        formData        string        true        "username"
+//        @Param                        password        formData        string        true        "password"
+//        @Success                201                        {object}        dto.ResponseCreated
+//        @Failure                401                        {object}        helpers.HttpError        "Invalid username or password"
+//        @Failure                409                        {object}        helpers.HttpError        "The user is already registered."
+//        @Failure                500                        {object}        helpers.HttpError        "Unexpected error from database&lt;br&gt;An error occurred while encrypting the password."
+//        @Router                        /auth/register [post]
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        username := r.FormValue("username")
+        password := r.FormValue("password")
+
+        userId, err := h.service.Register(ctx, username, password)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">helpers.WriteResponse(w, r, http.StatusCreated, dto.ResponseCreated{Id: *userId})</span>
+}
+
+// Verify godoc
+//
+//        @Summary                Verify Auth cookie
+//        @Description        Verify Auth cookie and return user id
+//        @Tags                        auth
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Success                200        {object}        dto.VerifyResponse
+//        @Failure                401        {object}        helpers.HttpError        "Session cookie not found&lt;br&gt;Unauthorized: No session found"
+//        @Failure                500        {object}        helpers.HttpError
+//        @Router                        /auth/verify [get]
+func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        cookie, err := getAuthCookie(r)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">id, err := h.service.GetUserId(ctx, cookie)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">v := dto.VerifyResponse{Id: *id}
+        helpers.WriteResponse(w, r, http.StatusOK, &amp;v)</span>
+}
+
+// Logout godoc
+//
+//        @Summary                Logout user
+//        @Description        Clear auth cookie
+//        @Tags                        auth
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Success                200        {object}        dto.Response
+//        @Failure                401        {object}        helpers.HttpError        "Session cookie not found"
+//        @Failure                500        {object}        helpers.HttpError
+//        @Router                        /auth/logout [post]
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        cookie, err := getAuthCookie(r)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">h.service.Logout(cookie)
+
+        http.SetCookie(w, &amp;http.Cookie{
+                Name:     "session_token",
+                Value:    "",
+                Expires:  time.Now().Add(-1 * time.Hour),
+                HttpOnly: true,
+                Path:     "/",
+        })
+        helpers.WriteResponse(w, r, http.StatusOK, dto.Response{Message: "OK"})</span>
+}
+
+func getAuthCookie(r *http.Request) (*http.Cookie, error) <span class="cov8" title="1">{
+        cookie, err := r.Cookie("session_token")
+        if err != nil </span><span class="cov8" title="1">{
+                newAuthErr := errs.NewAuthenticationError("Session cookie not found")
+                return nil, newAuthErr
+        }</span>
+
+        <span class="cov8" title="1">return cookie, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package main
+
+import (
+        "github.com/leonardovalentini/crypto-coins/auth/app"
+)
+
+func main() <span class="cov0" title="0">{
+        app.Start()
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package service
+
+import (
+        "context"
+        "encoding/hex"
+        "net/http"
+        "strconv"
+        "sync"
+        "time"
+
+        "github.com/leonardovalentini/crypto-coins/auth/domain"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+        "golang.org/x/crypto/bcrypt"
+)
+
+var (
+        sessionStore = make(map[string]string)
+        sessionMutex sync.RWMutex
+)
+
+//go:generate mockgen -destination=../tests/mocks/service/mockAuthService.go -package=service github.com/leonardovalentini/crypto-coins/auth/service AuthService
+type AuthService interface {
+        Login(ctx context.Context, username, password string) (*http.Cookie, error)
+        Logout(cookie *http.Cookie)
+        Register(ctx context.Context, username, password string) (*int, error)
+        GetUserId(ctx context.Context, cookie *http.Cookie) (*string, error)
+}
+
+type DefaultAuthService struct {
+        repo domain.UserRepository
+        rg   func(b []byte) (n int, err error)
+        now  func() time.Time
+}
+
+func NewAuthService(repository domain.UserRepository, randomGenerator func(b []byte) (int, error), n func() time.Time) AuthService <span class="cov8" title="1">{
+        return &amp;DefaultAuthService{repo: repository, rg: randomGenerator, now: n}
+}</span>
+
+func (s *DefaultAuthService) Login(ctx context.Context, username, password string) (*http.Cookie, error) <span class="cov8" title="1">{
+        user, err := s.repo.FindByUsername(ctx, username)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewAuthenticationError("Invalid username or password")
+        }</span>
+
+        <span class="cov8" title="1">sessionToken, err := s.generateToken()
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewUnexpectedError("Unexpected error")
+        }</span>
+        <span class="cov8" title="1">sessionMutex.Lock()
+        sessionStore[*sessionToken] = strconv.Itoa(user.Id)
+        sessionMutex.Unlock()
+
+        return &amp;http.Cookie{
+                Name:     "session_token",
+                Value:    *sessionToken,
+                Path:     "/",
+                Expires:  s.now().Add(30 * time.Minute),
+                MaxAge:   1800,
+                HttpOnly: true,
+                Secure:   true,
+                SameSite: http.SameSiteLaxMode,
+        }, nil</span>
+
+}
+
+func (s *DefaultAuthService) Register(ctx context.Context, username, password string) (*int, error) <span class="cov8" title="1">{
+        exists, err := s.repo.CheckIfUsernameExists(ctx, username)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">if *exists </span><span class="cov8" title="1">{
+                return nil, errs.NewConflictError("The user is already registered.")
+        }</span>
+
+        <span class="cov8" title="1">hashPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewUnexpectedError("An error occurred while encrypting the password.")
+        }</span>
+
+        <span class="cov8" title="1">newUser := domain.User{
+                Username: username,
+                Password: string(hashPass),
+        }
+
+        userSaved, err := s.repo.Save(ctx, newUser)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return &amp;userSaved.Id, nil</span>
+}
+
+func (s *DefaultAuthService) Logout(cookie *http.Cookie) <span class="cov8" title="1">{
+        sessionMutex.Lock()
+        delete(sessionStore, cookie.Value)
+        sessionMutex.Unlock()
+}</span>
+
+func (s *DefaultAuthService) GetUserId(ctx context.Context, cookie *http.Cookie) (*string, error) <span class="cov8" title="1">{
+        sessionMutex.RLock()
+        userId, exists := sessionStore[cookie.Value]
+        sessionMutex.RUnlock()
+        if !exists </span><span class="cov8" title="1">{
+                loggerWithCxt := logger.NewLogger(ctx)
+                loggerWithCxt.Error("Unauthorized: no session found")
+                return nil, errs.NewAuthenticationError("Unauthorized: No session found")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;userId, nil</span>
+}
+
+func (s *DefaultAuthService) generateToken() (*string, error) <span class="cov8" title="1">{
+        b := make([]byte, 32)
+        if _, err := s.rg(b); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">token := hex.EncodeToString(b)
+        return &amp;token, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

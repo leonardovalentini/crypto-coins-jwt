@@ -1,0 +1,1615 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>app: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/leonardovalentini/crypto-coins/crypto/app/app.go (0.0%)</option>
+				
+				<option value="file1">github.com/leonardovalentini/crypto-coins/crypto/domain/BrokerSite1.go (100.0%)</option>
+				
+				<option value="file2">github.com/leonardovalentini/crypto-coins/crypto/domain/BrokerSite2.go (100.0%)</option>
+				
+				<option value="file3">github.com/leonardovalentini/crypto-coins/crypto/domain/PriceDb.go (100.0%)</option>
+				
+				<option value="file4">github.com/leonardovalentini/crypto-coins/crypto/domain/UserCoinDb.go (91.2%)</option>
+				
+				<option value="file5">github.com/leonardovalentini/crypto-coins/crypto/domain/price.go (100.0%)</option>
+				
+				<option value="file6">github.com/leonardovalentini/crypto-coins/crypto/domain/userCoin.go (100.0%)</option>
+				
+				<option value="file7">github.com/leonardovalentini/crypto-coins/crypto/dto/price.go (100.0%)</option>
+				
+				<option value="file8">github.com/leonardovalentini/crypto-coins/crypto/dto/userCoin.go (100.0%)</option>
+				
+				<option value="file9">github.com/leonardovalentini/crypto-coins/crypto/handler/coinsPriceHandler.go (89.4%)</option>
+				
+				<option value="file10">github.com/leonardovalentini/crypto-coins/crypto/handler/userCoinHandler.go (100.0%)</option>
+				
+				<option value="file11">github.com/leonardovalentini/crypto-coins/crypto/main.go (0.0%)</option>
+				
+				<option value="file12">github.com/leonardovalentini/crypto-coins/crypto/service/coinsPriceService.go (100.0%)</option>
+				
+				<option value="file13">github.com/leonardovalentini/crypto-coins/crypto/service/userCoinService.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package app
+
+import (
+        "context"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        "time"
+
+        "github.com/gorilla/mux"
+        "github.com/jmoiron/sqlx"
+        "github.com/leonardovalentini/crypto-coins/crypto/docs"
+        "github.com/leonardovalentini/crypto-coins/crypto/domain"
+        "github.com/leonardovalentini/crypto-coins/crypto/handler"
+        "github.com/leonardovalentini/crypto-coins/crypto/service"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+        "github.com/leonardovalentini/crypto-coins/lib/middleware"
+        "github.com/leonardovalentini/crypto-coins/lib/middleware/authMiddleware"
+        httpSwagger "github.com/swaggo/http-swagger"
+)
+
+func sanityCheck() <span class="cov0" title="0">{
+        envProps := []string{
+                "SERVER_ADDRESS",
+                "SERVER_PORT",
+                "DB_USER",
+                "DB_PASSWORD",
+                "DB_HOST",
+                "DB_PORT",
+                "DB_NAME",
+                "AUTH_HOST",
+                "AUTH_PORT",
+                "GECKO_API_KEY",
+                "CMC_API_KEY",
+        }
+        for _, k := range envProps </span><span class="cov0" title="0">{
+                if os.Getenv(k) == "" </span><span class="cov0" title="0">{
+                        logger.Fatal(fmt.Sprintf("Environment variable %s not defined. Terminating application...", k))
+                }</span>
+        }
+}
+
+// @title                                                Crypto API
+// @version                                        1.0
+// @description                                This API allows you to keep a historical record of your favorite cryptocurrencies.
+// @securityDefinitions.apikey        CookieAuth
+// @in                                                        cookie
+// @name                                                session_token
+// @host                                                localhost:8181
+func Start() <span class="cov0" title="0">{
+        sanityCheck()
+
+        dbClient := getDbClient()
+        defer dbClient.Close()
+
+        client := &amp;http.Client{Timeout: 10 * time.Second}
+
+        var log logger.LoggerI = logger.NewLogger(context.Background())
+        ur := domain.NewUserCoinRepositoryDb(dbClient)
+        ucs := service.NewUserCoinService(ur)
+        uch := handler.NewUserCoinHandler(ucs)
+
+        pr := domain.NewPriceRepositoryDb(dbClient)
+        cps1 := domain.NewBrokerSite1(client, "https://api.coingecko.com")
+        cps2 := domain.NewBrokerSite2(client, "https://pro-api.coinmarketcap.com")
+        cps := service.NewCoinsPriceService(ur, pr, []domain.BrokerSite{cps1, cps2}, log, time.Now)
+        cph := handler.NewCoinsPriceHandler(cps)
+
+        router := mux.NewRouter()
+        router.Use(helpers.RecoveryMiddleware)
+        router.Use(middleware.RequestIDMiddleware)
+        router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusOK)
+                w.Write([]byte("OK"))
+        }</span>)
+        <span class="cov0" title="0">router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+        router.Use(logger.LoggingMiddleware())
+
+        jobsRouter := router.PathPrefix("/jobs").Subrouter()
+        cph.RegisterPublicRoutes(jobsRouter)
+
+        privateRouter := router.PathPrefix("/api").Subrouter()
+        privateRouter.Use(authMiddleware.AuthMiddleware())
+
+        uch.RegisterPrivateRoutes(privateRouter)
+        cph.RegisterPrivateRoutes(privateRouter)
+
+        address := os.Getenv("SERVER_ADDRESS")
+        port := os.Getenv("SERVER_PORT")
+
+        docs.SwaggerInfo.Host = fmt.Sprintf("%s:%s", address, port)
+
+        logger.Info(fmt.Sprintf("Starting server on %s:%s ...", address, port))
+        logger.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), router).Error())</span>
+
+}
+
+func getDbClient() *sqlx.DB <span class="cov0" title="0">{
+        dbUser := os.Getenv("DB_USER")
+        dbPasswd := os.Getenv("DB_PASSWORD")
+        dbAddr := os.Getenv("DB_HOST")
+        dbPort := os.Getenv("DB_PORT")
+        dbName := os.Getenv("DB_NAME")
+
+        dataSource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPasswd, dbAddr, dbPort, dbName)
+        client, err := sqlx.Open("mysql", dataSource)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Error opening database: %v", err)
+        }</span>
+        // See "Important settings" section.
+        <span class="cov0" title="0">client.SetConnMaxLifetime(time.Minute * 3)
+        client.SetMaxOpenConns(10)
+        client.SetMaxIdleConns(10)
+
+        if err = client.Ping(); err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Database unreachable: %v", err)
+        }</span>
+        <span class="cov0" title="0">logger.Info("Connected to MySQL successfully!")
+        return client</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package domain
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "os"
+        "strings"
+
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+type BrokerSite1 struct {
+        client  *http.Client
+        baseURL string
+}
+
+func NewBrokerSite1(client *http.Client, baseURL string) BrokerSite <span class="cov8" title="1">{
+        return &amp;BrokerSite1{client, baseURL}
+}</span>
+func (d *BrokerSite1) GetName() string <span class="cov8" title="1">{ return "CoinGecko" }</span>
+
+func (d *BrokerSite1) GetPrice(ctx context.Context, coin, coinRef string) (*float64, error) <span class="cov8" title="1">{
+        loggerWithCxt := logger.NewLogger(ctx)
+        coinSanitized := strings.ToLower(coin)
+        coinRefSanitized := strings.ToLower(coinRef)
+
+        baseUrl := fmt.Sprintf("%s/api/v3/simple/price", d.baseURL)
+        queryParams := map[string]string{"vs_currencies": coinRefSanitized, "symbols": coinSanitized}
+
+        url := helpers.BuildUrl(baseUrl, queryParams)
+        req, err := http.NewRequest("GET", url, nil)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error creating http request: " + err.Error())
+                return nil, errs.NewUnexpectedError("Error creating http request")
+        }</span>
+        <span class="cov8" title="1">key := os.Getenv("GECKO_API_KEY")
+        req.Header.Set("x-cg-demo-api-key", key)
+        req = req.WithContext(ctx)
+        resp, err := d.client.Do(req)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error creating http client: " + err.Error())
+                return nil, errs.NewUnexpectedError("Error creating http client")
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Wrong http code")
+                return nil, errs.NewUnexpectedError("Wrong http code")
+        }</span>
+
+        <span class="cov8" title="1">var data map[string]any
+        err = json.NewDecoder(resp.Body).Decode(&amp;data)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response " + err.Error())
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">coinData, err := helpers.GetAttribute(data, coinSanitized)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response " + err.Error())
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">price, ok := coinData[coinRefSanitized]
+        if !ok </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response")
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">value, ok := price.(float64)
+
+        if !ok </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response")
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;value, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package domain
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "os"
+        "strings"
+
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+type BrokerSite2 struct {
+        client  *http.Client
+        baseURL string
+}
+
+func NewBrokerSite2(client *http.Client, baseURL string) BrokerSite <span class="cov8" title="1">{
+        return &amp;BrokerSite2{client, baseURL}
+}</span>
+
+func (d *BrokerSite2) GetName() string <span class="cov8" title="1">{ return "CoinMarketCap" }</span>
+
+func (d *BrokerSite2) GetPrice(ctx context.Context, coin, coinRef string) (*float64, error) <span class="cov8" title="1">{
+        loggerWithCxt := logger.NewLogger(ctx)
+        coinSanitized := strings.ToUpper(coin)
+        coinRefSanitized := strings.ToUpper(coinRef)
+
+        baseUrl := fmt.Sprintf("%s/v1/tools/price-conversion", d.baseURL)
+        queryParams := map[string]string{"symbol": coinSanitized, "amount": "1", "convert": coinRefSanitized}
+
+        url := helpers.BuildUrl(baseUrl, queryParams)
+        req, err := http.NewRequest("GET", url, nil)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error creating http request: " + err.Error())
+                return nil, errs.NewUnexpectedError("Error creating http request")
+        }</span>
+        <span class="cov8" title="1">key := os.Getenv("CMC_API_KEY")
+        req.Header.Set("X-CMC_PRO_API_KEY", key)
+        req.Header.Set("Accept", "application/json")
+        req = req.WithContext(ctx)
+        resp, err := d.client.Do(req)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error creating http client: " + err.Error())
+                return nil, errs.NewUnexpectedError("Error creating http client")
+        }</span>
+        <span class="cov8" title="1">defer resp.Body.Close()
+
+        if resp.StatusCode != http.StatusOK </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Wrong http code")
+                return nil, errs.NewUnexpectedError("Wrong http code")
+        }</span>
+
+        <span class="cov8" title="1">var data map[string]any
+        err = json.NewDecoder(resp.Body).Decode(&amp;data)
+
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response " + err.Error())
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">data, err = helpers.GetAttribute(data, fmt.Sprintf(`data.quote.%s`, coinRefSanitized))
+
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response " + err.Error())
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">price, ok := data["price"]
+        if !ok || price == nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error(fmt.Sprintf("Error parsing the response or the price of %s %s is null", coin, coinRef))
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">value, ok := price.(float64)
+
+        if !ok </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing the response")
+                return nil, errs.NewUnexpectedError("Error decoding response")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;value, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package domain
+
+import (
+        "context"
+        "fmt"
+        "strings"
+
+        _ "github.com/go-sql-driver/mysql"
+        "github.com/jmoiron/sqlx"
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+type PriceRepositoryDb struct {
+        client *sqlx.DB
+}
+
+func NewPriceRepositoryDb(client *sqlx.DB) PriceRepository <span class="cov8" title="1">{
+        return &amp;PriceRepositoryDb{client: client}
+}</span>
+
+func (d *PriceRepositoryDb) Save(ctx context.Context, p Price) (*Price, error) <span class="cov8" title="1">{
+        loggerWithCxt := logger.NewLogger(ctx)
+        query := "INSERT INTO prices (coin, coin_ref, date, price, site) values (?, ?, ?, ?, ?)"
+
+        result, err := d.client.ExecContext(ctx, query, p.Coin, p.CoinRef, p.Date, p.Price, p.Site)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error while creating new price: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error while getting last insert id for new price: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+        <span class="cov8" title="1">p.Id = int(id)
+        return &amp;p, nil</span>
+}
+
+func (d *PriceRepositoryDb) FindAllBy(ctx context.Context, userId string, gpr *dto.GetPricesRequest) ([]Price, error) <span class="cov8" title="1">{
+        var prices []Price
+        offset := gpr.Page * gpr.Size
+
+        joinClause := `
+                FROM prices AS p 
+                INNER JOIN user_coins AS uc 
+                ON uc.user_id = ? AND p.coin = uc.coin AND p.coin_ref = uc.coin_ref `
+        whereClause, whereArgs := getWhereClause(gpr)
+
+        joinAndWhereClause := fmt.Sprintf(`%s %s`, joinClause, whereClause)
+        joinAndWhereArgs := []interface{}{userId}
+        joinAndWhereArgs = append(joinAndWhereArgs, whereArgs...)
+
+        itemsQuery := fmt.Sprintf(`
+                SELECT p.coin, p.coin_ref, p.date, p.price, p.site 
+                %s 
+                LIMIT ? OFFSET ?`, joinAndWhereClause)
+        itemsArgs := append(joinAndWhereArgs, gpr.Size, offset)
+
+        err := d.client.SelectContext(ctx, &amp;prices, itemsQuery, itemsArgs...)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt := logger.NewLogger(ctx)
+                loggerWithCxt.Error("Error while searching for prices: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">if prices == nil </span><span class="cov8" title="1">{
+                prices = []Price{}
+        }</span>
+
+        <span class="cov8" title="1">return prices, err</span>
+}
+
+func (d *PriceRepositoryDb) GetSummary(ctx context.Context, userId string, gpr *dto.GetPricesRequest) (*int, *Summary, error) <span class="cov8" title="1">{
+        joinAndWhereClause, joinAndWhereArgs := getJoinAndWhereClause(userId, gpr)
+
+        var summaryRows []SummaryRow
+        summaryQuery := fmt.Sprintf(`
+                SELECT "coin" AS column_name, p.coin AS value, COUNT(*) AS count
+                %s 
+                GROUP BY p.coin
+                UNION ALL
+                SELECT "coin_ref" AS columnName, p.coin_ref AS value, COUNT(*) AS count
+                %s 
+                GROUP BY p.coin_ref
+                UNION ALL
+                SELECT "site" AS columnName, p.site AS value, COUNT(*) AS count
+                %s 
+                GROUP BY p.site
+                `, joinAndWhereClause, joinAndWhereClause, joinAndWhereClause)
+        var summaryArgs []interface{}
+        summaryArgs = append(summaryArgs, joinAndWhereArgs...)
+        summaryArgs = append(summaryArgs, joinAndWhereArgs...)
+        summaryArgs = append(summaryArgs, joinAndWhereArgs...)
+
+        err := d.client.SelectContext(ctx, &amp;summaryRows, summaryQuery, summaryArgs...)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt := logger.NewLogger(ctx)
+                loggerWithCxt.Error("Error while searching for prices: " + err.Error())
+                return nil, nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">total := 0
+        summary := Summary{}
+        for _, v := range summaryRows </span><span class="cov8" title="1">{
+                if v.ColumnName == "coin" </span><span class="cov8" title="1">{
+                        total += v.Count
+                        if summary.Coin == nil </span><span class="cov8" title="1">{
+                                summary.Coin = make(map[string]int)
+                        }</span>
+                        <span class="cov8" title="1">summary.Coin[v.Value] = v.Count</span>
+                }
+
+                <span class="cov8" title="1">if v.ColumnName == "coin_ref" </span><span class="cov8" title="1">{
+                        if summary.CoinRef == nil </span><span class="cov8" title="1">{
+                                summary.CoinRef = make(map[string]int)
+                        }</span>
+                        <span class="cov8" title="1">summary.CoinRef[v.Value] = v.Count</span>
+                }
+
+                <span class="cov8" title="1">if v.ColumnName == "site" </span><span class="cov8" title="1">{
+                        if summary.Site == nil </span><span class="cov8" title="1">{
+                                summary.Site = make(map[string]int)
+                        }</span>
+                        <span class="cov8" title="1">summary.Site[v.Value] = v.Count</span>
+                }
+
+        }
+
+        <span class="cov8" title="1">return &amp;total, &amp;summary, err</span>
+}
+
+func getWhereClause(gpr *dto.GetPricesRequest) (string, []interface{}) <span class="cov8" title="1">{
+        var args []interface{}
+        var conditions []string
+
+        if gpr.Coin != nil </span><span class="cov8" title="1">{
+                conditions = append(conditions, "p.coin = ?")
+                args = append(args, *gpr.Coin)
+        }</span>
+
+        <span class="cov8" title="1">if gpr.CoinRef != nil </span><span class="cov8" title="1">{
+                conditions = append(conditions, "p.coin_ref = ?")
+                args = append(args, *gpr.CoinRef)
+        }</span>
+
+        <span class="cov8" title="1">if gpr.Price != nil </span><span class="cov8" title="1">{
+                conditions = append(conditions, "p.price = ?")
+                args = append(args, *gpr.Price)
+        }</span>
+
+        <span class="cov8" title="1">if gpr.StartDate != nil </span><span class="cov8" title="1">{
+                conditions = append(conditions, "p.date &gt;= ?")
+                args = append(args, *gpr.StartDate)
+        }</span>
+
+        <span class="cov8" title="1">if gpr.EndDate != nil </span><span class="cov8" title="1">{
+                conditions = append(conditions, "p.date &lt;= ?")
+                args = append(args, *gpr.EndDate)
+        }</span>
+
+        <span class="cov8" title="1">if gpr.Site != nil </span><span class="cov8" title="1">{
+                conditions = append(conditions, "p.site = ?")
+                args = append(args, *gpr.Site)
+        }</span>
+
+        <span class="cov8" title="1">clause := ""
+        if len(conditions) &gt; 0 </span><span class="cov8" title="1">{
+                clause = fmt.Sprintf("WHERE %s", strings.Join(conditions, " AND "))
+        }</span>
+        <span class="cov8" title="1">return clause, args</span>
+}
+
+func getJoinAndWhereClause(userId string, gpr *dto.GetPricesRequest) (string, []interface{}) <span class="cov8" title="1">{
+        joinClause := `
+                FROM prices AS p 
+                INNER JOIN user_coins AS uc 
+                ON uc.user_id = ? AND p.coin = uc.coin AND p.coin_ref = uc.coin_ref `
+        whereClause, whereArgs := getWhereClause(gpr)
+
+        joinAndWhereClause := fmt.Sprintf(`%s %s`, joinClause, whereClause)
+        joinAndWhereArgs := []interface{}{userId}
+        joinAndWhereArgs = append(joinAndWhereArgs, whereArgs...)
+
+        return joinAndWhereClause, joinAndWhereArgs
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package domain
+
+import (
+        "context"
+        "database/sql"
+        "errors"
+
+        "github.com/go-sql-driver/mysql"
+        "github.com/jmoiron/sqlx"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+type UserCoinRepositoryDb struct {
+        client *sqlx.DB
+}
+
+func NewUserCoinRepositoryDb(client *sqlx.DB) UserCoinRepository <span class="cov8" title="1">{
+        return &amp;UserCoinRepositoryDb{client: client}
+}</span>
+
+func (c *UserCoinRepositoryDb) FindAllByUserId(ctx context.Context, id string) ([]UserCoin, error) <span class="cov8" title="1">{
+        var err error
+        UserCoins := make([]UserCoin, 0)
+
+        query := "SELECT id, coin, coin_ref FROM user_coins WHERE user_id = ?"
+
+        err = c.client.SelectContext(ctx, &amp;UserCoins, query, id)
+
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewUnexpectedError("Error while querying UserCoins table " + err.Error())
+        }</span>
+
+        <span class="cov8" title="1">return UserCoins, nil</span>
+}
+
+func (c *UserCoinRepositoryDb) FindBy(ctx context.Context, userId, coin, coinRef string) ([]UserCoin, error) <span class="cov8" title="1">{
+        var err error
+        userCoins := make([]UserCoin, 0)
+
+        query := "SELECT id, coin, coin_ref FROM user_coins WHERE user_id = ? AND coin = ? and coin_ref = ?"
+
+        err = c.client.SelectContext(ctx, &amp;userCoins, query, userId, coin, coinRef)
+
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewUnexpectedError("Error while querying UserCoins table " + err.Error())
+        }</span>
+
+        <span class="cov8" title="1">return userCoins, nil</span>
+}
+
+func (c *UserCoinRepositoryDb) FindByUserCoinId(ctx context.Context, userId, userCoinId string) (*UserCoin, error) <span class="cov8" title="1">{
+        var err error
+        var userCoin UserCoin
+
+        query := "SELECT id, user_id, coin, coin_ref FROM user_coins WHERE user_id = ? AND id = ? LIMIT 1"
+
+        err = c.client.GetContext(ctx, &amp;userCoin, query, userId, userCoinId)
+        if err != nil </span><span class="cov8" title="1">{
+                if errors.Is(err, sql.ErrNoRows) </span><span class="cov8" title="1">{
+                        return nil, errs.NewNotFoundError("The coin was not found")
+                }</span>
+
+                <span class="cov8" title="1">return nil, errs.NewUnexpectedError("Error while querying UserCoins table " + err.Error())</span>
+        }
+
+        <span class="cov8" title="1">return &amp;userCoin, nil</span>
+}
+
+func (c *UserCoinRepositoryDb) FindDifferentsCoins(ctx context.Context) ([]UserCoin, error) <span class="cov8" title="1">{
+        var err error
+        UserCoins := make([]UserCoin, 0)
+
+        query := "SELECT DISTINCT coin, coin_ref FROM user_coins"
+
+        err = c.client.SelectContext(ctx, &amp;UserCoins, query)
+
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, errs.NewUnexpectedError("Error while querying UserCoins table " + err.Error())
+        }</span>
+
+        <span class="cov8" title="1">return UserCoins, nil</span>
+}
+
+func (c *UserCoinRepositoryDb) Save(ctx context.Context, u UserCoin) (*UserCoin, error) <span class="cov8" title="1">{
+        loggerWithCxt := logger.NewLogger(ctx)
+        query := "INSERT INTO user_coins (user_id, coin, coin_ref) values (?, ?, ?)"
+
+        result, err := c.client.ExecContext(ctx, query, u.UserId, u.Coin, u.CoinRef)
+        if err != nil </span><span class="cov8" title="1">{
+                var mysqlErr *mysql.MySQLError
+                if errors.As(err, &amp;mysqlErr) &amp;&amp; mysqlErr.Number == 1062 </span><span class="cov0" title="0">{
+                        loggerWithCxt.Error("The user has already added that coin: " + err.Error())
+                        return nil, errs.NewConflictError("The user has already added that coin")
+                }</span>
+                <span class="cov8" title="1">loggerWithCxt.Error("Error while creating new user coin: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")</span>
+        }
+
+        <span class="cov8" title="1">id, err := result.LastInsertId()
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error while getting last insert id for new user coin: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+        <span class="cov8" title="1">u.Id = int(id)
+        return &amp;u, nil</span>
+}
+
+func (c *UserCoinRepositoryDb) Update(ctx context.Context, u UserCoin) (*UserCoin, error) <span class="cov8" title="1">{
+        loggerWithCxt := logger.NewLogger(ctx)
+        query := "UPDATE user_coins SET coin = ?, coin_ref = ? WHERE id = ? AND user_id = ?"
+
+        result, err := c.client.ExecContext(ctx, query, u.Coin, u.CoinRef, u.Id, u.UserId)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error while updating user coin: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">rowsAffected, err := result.RowsAffected()
+        if err != nil </span><span class="cov0" title="0">{
+                loggerWithCxt.Error("Error while updating user coin: " + err.Error())
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">if rowsAffected == 0 </span><span class="cov0" title="0">{
+                loggerWithCxt.Error("item not found or user unauthorized to update")
+                return nil, errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;u, nil</span>
+}
+
+func (c *UserCoinRepositoryDb) Delete(ctx context.Context, id string) error <span class="cov8" title="1">{
+        query := "DELETE FROM user_coins WHERE id = ?"
+
+        _, err := c.client.ExecContext(ctx, query, id)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt := logger.NewLogger(ctx)
+                loggerWithCxt.Error("Error while deleting new user coin: " + err.Error())
+                return errs.NewUnexpectedError("Unexpected error from database")
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package domain
+
+import (
+        "context"
+        "time"
+
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+)
+
+type Summary struct {
+        Coin    map[string]int
+        CoinRef map[string]int
+        Site    map[string]int
+}
+
+func (d *Summary) ToDto() *dto.SummaryResponse <span class="cov8" title="1">{
+        return &amp;dto.SummaryResponse{
+                Coin:    d.Coin,
+                CoinRef: d.CoinRef,
+                Site:    d.Site,
+        }
+}</span>
+
+type Price struct {
+        Id      int       `json:"id" xml:"id" db:"id"`
+        Coin    string    `json:"coin" xml:"coin" db:"coin"`
+        CoinRef string    `json:"coin_ref" xml:"coin_ref" db:"coin_ref"`
+        Date    time.Time `json:"date" xml:"date" db:"date"`
+        Price   float64   `json:"price" xml:"price" db:"price"`
+        Site    string    `json:"site" xml:"site" db:"site"`
+}
+
+func (d *Price) ToDto() *dto.PriceResponse <span class="cov8" title="1">{
+        return &amp;dto.PriceResponse{
+                Id:      d.Id,
+                Coin:    d.Coin,
+                CoinRef: d.CoinRef,
+                Date:    d.Date,
+                Price:   d.Price,
+                Site:    d.Site,
+        }
+}</span>
+
+//go:generate mockgen -destination=../tests/mocks/domain/mockPriceRepository.go -package=domain github.com/leonardovalentini/crypto-coins/crypto/domain PriceRepository
+type PriceRepository interface {
+        FindAllBy(ctx context.Context, userId string, gpr *dto.GetPricesRequest) ([]Price, error)
+        GetSummary(ctx context.Context, userId string, gpr *dto.GetPricesRequest) (*int, *Summary, error)
+        Save(ctx context.Context, p Price) (*Price, error)
+}
+
+type SummaryRow struct {
+        ColumnName string `json:"column_name" xml:"column_name" db:"column_name"`
+        Value      string `json:"value" xml:"value" db:"value"`
+        Count      int    `json:"count" xml:"count" db:"count"`
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package domain
+
+import (
+        "context"
+
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+)
+
+type UserCoin struct {
+        Id      int    `json:"id" xml:"id" db:"id"`
+        UserId  string `json:"-" xml:"" db:"user_id"`
+        Coin    string `json:"coin" xml:"coin" db:"coin"`
+        CoinRef string `json:"coin_ref" xml:"coin_ref" db:"coin_ref"`
+}
+
+func (c *UserCoin) ToNewUserCoinResponseDto() *dto.NewUserCoinResponse <span class="cov8" title="1">{
+        return &amp;dto.NewUserCoinResponse{
+                Id: c.Id,
+        }
+}</span>
+
+func (c *UserCoin) ToDto() *dto.UserCoinResponse <span class="cov8" title="1">{
+        return &amp;dto.UserCoinResponse{
+                Id:      c.Id,
+                Coin:    c.Coin,
+                CoinRef: c.CoinRef,
+        }
+}</span>
+
+//go:generate mockgen -destination=../tests/mocks/domain/mockUserCoinRepository.go -package=domain github.com/leonardovalentini/crypto-coins/crypto/domain UserCoinRepository
+type UserCoinRepository interface {
+        FindAllByUserId(ctx context.Context, id string) ([]UserCoin, error)
+        FindBy(ctx context.Context, userId, coin, coinRef string) ([]UserCoin, error)
+        FindByUserCoinId(ctx context.Context, userId, userCoinId string) (*UserCoin, error)
+        FindDifferentsCoins(ctx context.Context) ([]UserCoin, error)
+        Save(ctx context.Context, u UserCoin) (*UserCoin, error)
+        Update(ctx context.Context, u UserCoin) (*UserCoin, error)
+        Delete(ctx context.Context, id string) error
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package dto
+
+import (
+        "math"
+        "net/http"
+        "regexp"
+        "strconv"
+        "time"
+
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+)
+
+type EmptyResponse struct{}
+
+type GetPricesRequest struct {
+        Page      int
+        Size      int
+        Coin      *string
+        CoinRef   *string
+        Price     *float64
+        StartDate *time.Time
+        EndDate   *time.Time
+        Site      *string
+}
+
+var validSymbolRegex = regexp.MustCompile(`^[A-Z]{3}$`)
+
+func NewGetPricesRequest(r *http.Request) (*GetPricesRequest, error) <span class="cov8" title="1">{
+        queryUrl := r.URL.Query()
+        page, err := strconv.Atoi(queryUrl.Get("page"))
+        if err != nil || page &lt; 0 </span><span class="cov8" title="1">{
+                page = 0
+        }</span>
+
+        <span class="cov8" title="1">size, err := strconv.Atoi(queryUrl.Get("size"))
+        if err != nil || size &lt; 1 || size &gt; 100 </span><span class="cov8" title="1">{
+                size = 10
+        }</span>
+        <span class="cov8" title="1">response := GetPricesRequest{
+                Page: page,
+                Size: size,
+        }
+
+        if queryUrl.Has("coin") </span><span class="cov8" title="1">{
+                coin := queryUrl.Get("coin")
+                response.Coin = &amp;coin
+        }</span>
+
+        <span class="cov8" title="1">if queryUrl.Has("coin_ref") </span><span class="cov8" title="1">{
+                coinRef := queryUrl.Get("coin_ref")
+                response.CoinRef = &amp;coinRef
+        }</span>
+
+        <span class="cov8" title="1">if queryUrl.Has("price") </span><span class="cov8" title="1">{
+                price, err := strconv.ParseFloat(queryUrl.Get("price"), 64)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, errs.NewValidationError("Invalid price value")
+                }</span>
+                <span class="cov8" title="1">response.Price = &amp;price</span>
+        }
+
+        <span class="cov8" title="1">if queryUrl.Has("start_date") </span><span class="cov8" title="1">{
+                startDate, err := time.Parse(time.RFC3339, queryUrl.Get("start_date"))
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, errs.NewValidationError("Invalid start date value, should be in ISO format")
+                }</span>
+                <span class="cov8" title="1">response.StartDate = &amp;startDate</span>
+        }
+
+        <span class="cov8" title="1">if queryUrl.Has("end_date") </span><span class="cov8" title="1">{
+                endDate, err := time.Parse(time.RFC3339, queryUrl.Get("end_date"))
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, errs.NewValidationError("Invalid end date value, should be in ISO format")
+                }</span>
+                <span class="cov8" title="1">response.EndDate = &amp;endDate</span>
+        }
+
+        <span class="cov8" title="1">if queryUrl.Has("site") </span><span class="cov8" title="1">{
+                site := queryUrl.Get("site")
+                response.Site = &amp;site
+        }</span>
+
+        <span class="cov8" title="1">return &amp;response, nil</span>
+}
+
+func (pr *GetPricesRequest) Validate() error <span class="cov8" title="1">{
+        if pr.Coin != nil &amp;&amp; !validSymbolRegex.MatchString(*pr.Coin) </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The coin symbol must be three chars")
+        }</span>
+
+        <span class="cov8" title="1">if pr.CoinRef != nil &amp;&amp; !validSymbolRegex.MatchString(*pr.CoinRef) </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The coin reference symbol must be three chars")
+        }</span>
+
+        <span class="cov8" title="1">if pr.Price != nil &amp;&amp; (math.IsNaN(*pr.Price) || *pr.Price &lt; 0) </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The price shold be a positive number")
+        }</span>
+
+        <span class="cov8" title="1">if pr.StartDate != nil &amp;&amp; time.Now().Before(*pr.StartDate) </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The start date should be before today")
+        }</span>
+
+        <span class="cov8" title="1">if pr.EndDate != nil &amp;&amp; time.Now().Before(*pr.EndDate) </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The end date should be before today")
+        }</span>
+
+        <span class="cov8" title="1">if pr.StartDate != nil &amp;&amp; pr.EndDate != nil &amp;&amp; pr.EndDate.Before(*pr.StartDate) </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The start date should be before end date")
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+type PriceResponse struct {
+        Id      int       `json:"-" xml:"-"`
+        Coin    string    `json:"coin" xml:"coin" example:"btc" minlength:"3" maxlength:"3"`
+        CoinRef string    `json:"coin_ref" xml:"coin_ref" example:"eth" minlength:"3" maxlength:"3"`
+        Date    time.Time `json:"date" xml:"date" example:"2026-08-19T18:33:34Z"`
+        Price   float64   `json:"price" xml:"price" example:"12.34"`
+        Site    string    `json:"site" xml:"site" example:"CoinGecko"`
+}
+
+type SummaryResponse struct {
+        Coin    map[string]int `json:"coin,omitempty" xml:"coin,omitempty" swaggertype:"object,integer" example:"btc:2,eth:3"`
+        CoinRef map[string]int `json:"coin_ref,omitempty" xml:"coin_ref,omitempty" swaggertype:"object,integer" example:"ldc:1,usd:4"`
+        Site    map[string]int `json:"site,omitempty" xml:"site,omitempty" swaggertype:"object,integer" example:"CoinGecko:4,CoinMarketCap:1"`
+}
+
+type PricesResponse struct {
+        Page       int             `json:"page" xml:"page" example:"0"`
+        Size       int             `json:"size" xml:"size" example:"10"`
+        TotalItems int             `json:"total_items" xml:"total_items" example:"1"`
+        TotalPages int             `json:"total_pages" xml:"total_pages" example:"1"`
+        Items      []PriceResponse `json:"items" xml:"items"`
+        Summary    SummaryResponse `json:"summary" xml:"summary"`
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package dto
+
+import (
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+)
+
+type UserCoinRequest struct {
+        Coin    string `json:"coin" xml:"coin" example:"btc" minlength:"3" maxlength:"3"`
+        CoinRef string `json:"coin_ref" xml:"coin_ref" example:"eth" minlength:"3" maxlength:"3"`
+}
+
+type UserCoinResponse struct {
+        Id      int    `json:"id" xml:"id" example:"1"`
+        Coin    string `json:"coin" xml:"coin" example:"btc" minlength:"3" maxlength:"3"`
+        CoinRef string `json:"coin_ref" xml:"coin_ref" example:"eth" minlength:"3" maxlength:"3"`
+}
+
+func (r *UserCoinRequest) Validate() error <span class="cov8" title="1">{
+        if len(r.Coin) != 3 </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The coin symbol must be three chars")
+        }</span>
+
+        <span class="cov8" title="1">if len(r.CoinRef) != 3 </span><span class="cov8" title="1">{
+                return errs.NewValidationError("The coin reference must be three chars")
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+type NewUserCoinResponse struct {
+        Id int `json:"id" xml:"id"`
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package handler
+
+import (
+        "context"
+        "math"
+        "net/http"
+
+        "github.com/google/uuid"
+        "github.com/gorilla/mux"
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+        "github.com/leonardovalentini/crypto-coins/crypto/service"
+        "github.com/leonardovalentini/crypto-coins/lib/contextKey"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+type CoinsPriceHandler struct {
+        service       service.CoinsPriceService
+        jobPricesBusy chan string
+}
+
+func NewCoinsPriceHandler(service service.CoinsPriceService) *CoinsPriceHandler <span class="cov8" title="1">{
+        ch := make(chan string, 1)
+        ch &lt;- "Free"
+
+        return &amp;CoinsPriceHandler{service: service, jobPricesBusy: ch}
+}</span>
+
+func (h *CoinsPriceHandler) RegisterPublicRoutes(router *mux.Router) <span class="cov8" title="1">{
+        pricesCoinRouter := router.PathPrefix("/broker-prices").Subrouter()
+
+        pricesCoinRouter.
+                HandleFunc("", h.GetBrokerPrices).
+                Methods(http.MethodGet).
+                Name("JobPrices")
+}</span>
+
+func (h *CoinsPriceHandler) RegisterPrivateRoutes(router *mux.Router) <span class="cov8" title="1">{
+        pricesCoinRouter := router.PathPrefix("/prices").Subrouter()
+
+        pricesCoinRouter.
+                HandleFunc("", h.GetAllPrices).
+                Methods(http.MethodGet).
+                Name("GetAllPrices")
+}</span>
+
+// GetBrokerPrices godoc
+//
+//        @Summary                Job to complete prices
+//        @Description        Job to complete current currency prices from brokers.
+//        @Tags                        prices
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Failure                503        {object}        helpers.HttpError        "Job is already running"
+//        @Success                202        {object}        dto.EmptyResponse        "Accepted"
+//        @Router                        /jobs/broker-prices [get]
+func (h *CoinsPriceHandler) GetBrokerPrices(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+
+        select </span>{
+        case &lt;-h.jobPricesBusy:<span class="cov8" title="1"></span>
+        default:<span class="cov0" title="0">
+                loggerWithCxt := logger.NewLogger(ctx)
+                loggerWithCxt.Error("Job is already running")
+                err := errs.NewServiceUnavailableError("Job is already running")
+                helpers.HandleError(w, r, err)
+                return</span>
+        }
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
+                h.jobPricesBusy &lt;- "Free"
+        }</span>()
+
+        <span class="cov8" title="1">jobID := uuid.New().String()
+        jobCtx := contextKey.WithJobId(context.Background(), jobID)
+
+        helpers.WriteResponse(w, r, http.StatusAccepted, dto.EmptyResponse{})
+        h.service.JobPrices(jobCtx)</span>
+}
+
+// GetAllPrices godoc
+//
+//        @Summary                Get historical price lists
+//        @Description        Retrieve filtered and paginated historical price lists.
+//        @Tags                        prices
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Param                        page                query                int                false        "Page number starting 0"        default(0)
+//        @Param                        size                query                int                false        "Page size"                                        default(10)
+//        @Param                        coin                query                string        false        "3-character code"                        minlength(3)                maxlength(3)        default()        example(btc)
+//        @Param                        coin_ref        query                string        false        "3-character code"                        minlength(3)                maxlength(3)        default()        example(eth)
+//        @Param                        price                query                number        false        "Price"                                                minimum(0)                        default()                example(12.34)
+//        @Param                        start_date        query                string        false        "Start date (ISO-8601)"                format(date-time)        default()                example(2026-08-21T15:30:00Z)
+//        @Param                        end_date        query                string        false        "End date (ISO-8601)"                format(date-time)        default()                example(2026-08-21T15:30:00Z)
+//        @Param                        site                query                string        false        "Site"                                                default()                        example(CoinGecko)
+//        @Success                200                        {object}        dto.PricesResponse
+//        @Failure                401                        {object}        helpers.HttpError        "User id not found"
+//        @Failure                422                        {object}        helpers.HttpError        "Invalid price value&lt;br&gt;Invalid start date value, should be in ISO format&lt;br&gt;Invalid end date value, should be in ISO format&lt;br&gt;The coin symbol must be three chars&lt;br&gt;The coin reference must be three chars&lt;br&gt;The coin symbol must be three chars&lt;br&gt;The coin reference must be three chars&lt;br&gt;The price shold be a positive number&lt;br&gt;The start date should be before today&lt;br&gt;The end date should be before today&lt;br&gt;The start date should be before end date"
+//        @Failure                500                        {object}        helpers.HttpError        "Internal Server Error&lt;br&gt;Unexpected error from database
+//        @Router                        /api/prices [get]
+func (h *CoinsPriceHandler) GetAllPrices(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        loggerWithCxt := logger.NewLogger(ctx)
+        userId, err := contextKey.GetUserId(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">gpr, err := dto.NewGetPricesRequest(r)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error parsing get prices request: " + err.Error())
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+        <span class="cov8" title="1">err = gpr.Validate()
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error validating get prices request: " + err.Error())
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">prices, total, summary, err := h.service.GetPrices(ctx, *userId, gpr)
+        if err != nil </span><span class="cov8" title="1">{
+                loggerWithCxt.Error("Error in GetPrices: " + err.Error())
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">items := []dto.PriceResponse{}
+        for _, price := range prices </span><span class="cov8" title="1">{
+                items = append(items, *price.ToDto())
+        }</span>
+
+        <span class="cov8" title="1">totalPages := int(math.Ceil(float64(*total) / float64(gpr.Size)))
+
+        response := dto.PricesResponse{
+                Page:       gpr.Page,
+                Size:       gpr.Size,
+                Items:      items,
+                TotalItems: *total,
+                TotalPages: totalPages,
+                Summary:    *summary.ToDto(),
+        }
+        helpers.WriteResponse(w, r, http.StatusOK, &amp;response)</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package handler
+
+import (
+        "encoding/json"
+        "net/http"
+
+        "github.com/gorilla/mux"
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+        "github.com/leonardovalentini/crypto-coins/crypto/service"
+        "github.com/leonardovalentini/crypto-coins/lib/contextKey"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+        "github.com/leonardovalentini/crypto-coins/lib/helpers"
+)
+
+type UserCoinHandler struct {
+        service service.UserCoinService
+}
+
+func NewUserCoinHandler(service service.UserCoinService) *UserCoinHandler <span class="cov8" title="1">{
+        return &amp;UserCoinHandler{service: service}
+}</span>
+
+func (h *UserCoinHandler) RegisterPrivateRoutes(router *mux.Router) <span class="cov8" title="1">{
+        userCoinRouter := router.PathPrefix("/user-coins").Subrouter()
+
+        userCoinRouter.
+                HandleFunc("", h.GetAllUserCoins).
+                Methods(http.MethodGet).
+                Name("GetAllUserCoins")
+        userCoinRouter.
+                HandleFunc("", h.NewUserCoin).
+                Methods(http.MethodPost).
+                Name("NewUserCoin")
+        userCoinRouter.
+                HandleFunc("/{user_coin_id:[0-9]+}", h.UpdateUserCoin).
+                Methods(http.MethodPut).
+                Name("NewUserCoin")
+        userCoinRouter.
+                HandleFunc("/{user_coin_id:[0-9]+}", h.DeleteUserCoin).
+                Methods(http.MethodDelete).
+                Name("DeleteUserCoin")
+}</span>
+
+// GetAllUserCoins godoc
+//
+//        @Summary                Get user coins
+//        @Description        returns all the coins configured by the user
+//        @Tags                        user-coins
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Success                200        {array}                dto.UserCoinResponse
+//        @Failure                401        {object}        helpers.HttpError        "User id not found"
+//        @Failure                500        {object}        helpers.HttpError
+//        @Router                        /api/user-coins [get]
+func (h *UserCoinHandler) GetAllUserCoins(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        userId, err := contextKey.GetUserId(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">UserCoins, err := h.service.GetAllUserCoinsByUserId(ctx, *userId)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+        <span class="cov8" title="1">userCoinsResponse := []dto.UserCoinResponse{}
+
+        for _, userCoin := range UserCoins </span><span class="cov8" title="1">{
+                userCoinsResponse = append(userCoinsResponse, *userCoin.ToDto())
+        }</span>
+
+        <span class="cov8" title="1">helpers.WriteResponse(w, r, http.StatusOK, userCoinsResponse)</span>
+}
+
+// NewUserCoin godoc
+//
+//        @Summary                Add user coin
+//        @Description        Adds a new currency configuration to the user's list.
+//        @Tags                        user-coins
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Param                        body        body                dto.UserCoinRequest        true        "Currency info"
+//        @Success                200                {object}        dto.NewUserCoinResponse
+//        @Failure                400                {object}        helpers.HttpError        "Invalid request body&lt;br&gt;The coin symbol must be three chars&lt;br&gt;The coin reference must be three chars"
+//        @Failure                401                {object}        helpers.HttpError        "User id not found"
+//        @Failure                409                {object}        helpers.HttpError        "The user has already added that coin"
+//        @Failure                422                {object}        helpers.HttpError        "The coin symbol must be three chars&lt;br&gt;The coin reference must be three chars"
+//        @Failure                500                {object}        helpers.HttpError
+//        @Router                        /api/user-coins [post]
+func (h *UserCoinHandler) NewUserCoin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        userId, err := contextKey.GetUserId(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var request dto.UserCoinRequest
+        if err := json.NewDecoder(r.Body).Decode(&amp;request); err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, errs.NewBadRequestError("Invalid request body"))
+                return
+        }</span>
+
+        <span class="cov8" title="1">newUserCoin, err := h.service.NewUserCoin(ctx, *userId, request)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">helpers.WriteResponse(w, r, http.StatusCreated, newUserCoin)</span>
+}
+
+// UpdateUserCoin godoc
+//
+//        @Summary                Update user coin
+//        @Description        Update currency configuration to the user's list.
+//        @Tags                        user-coins
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Param                        id                path                int                                        true        "Currency ID"
+//        @Param                        body        body                dto.UserCoinRequest        true        "Currency info"
+//        @Success                200                {object}        dto.UserCoinResponse
+//        @Failure                400                {object}        helpers.HttpError        "Invalid request body&lt;br&gt;The coin symbol must be three chars&lt;br&gt;The coin reference must be three chars"
+//        @Failure                401                {object}        helpers.HttpError        "User id not found"
+//        @Failure                404                {object}        helpers.HttpError        "The coin was not found"
+//        @Failure                409                {object}        helpers.HttpError        "The user has already added that coin"
+//        @Failure                422                {object}        helpers.HttpError        "The coin symbol must be three chars&lt;br&gt;The coin reference must be three chars"
+//        @Failure                500                {object}        helpers.HttpError
+//        @Router                        /api/user-coins/{id} [put]
+func (h *UserCoinHandler) UpdateUserCoin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        userId, err := contextKey.GetUserId(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">vars := mux.Vars(r)
+        userCoinId := vars["user_coin_id"]
+
+        var request dto.UserCoinRequest
+
+        if err := json.NewDecoder(r.Body).Decode(&amp;request); err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, errs.NewBadRequestError("Invalid request body"))
+                return
+        }</span>
+
+        <span class="cov8" title="1">updatedUserCoin, err := h.service.UpdateUserCoin(ctx, *userId, userCoinId, request)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">userCoinResponse := updatedUserCoin.ToDto()
+
+        helpers.WriteResponse(w, r, http.StatusOK, userCoinResponse)</span>
+}
+
+// DeleteUserCoin godoc
+//
+//        @Summary                Delete user coin
+//        @Description        Delete currency configuration to the user's list.
+//        @Tags                        user-coins
+//        @Accept                        json
+//        @Produce                json,xml
+//        @Security                CookieAuth
+//        @Param                        id        path                int        true        "Currency ID"
+//        @Success                200        {object}        dto.EmptyResponse
+//        @Failure                401        {object}        helpers.HttpError        "User id not found"
+//        @Failure                404        {object}        helpers.HttpError        "The coin was not found"
+//        @Failure                500        {object}        helpers.HttpError
+//        @Router                        /api/user-coins/{id} [delete]
+func (h *UserCoinHandler) DeleteUserCoin(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        userId, err := contextKey.GetUserId(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">vars := mux.Vars(r)
+        userCoinId := vars["user_coin_id"]
+
+        err = h.service.DeleteUserCoin(ctx, *userId, userCoinId)
+        if err != nil </span><span class="cov8" title="1">{
+                helpers.HandleError(w, r, err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">helpers.WriteResponse(w, r, http.StatusOK, dto.EmptyResponse{})</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package main
+
+import (
+        "github.com/leonardovalentini/crypto-coins/crypto/app"
+)
+
+func main() <span class="cov0" title="0">{
+        app.Start()
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package service
+
+import (
+        "context"
+        "fmt"
+        "sync"
+        "time"
+
+        "github.com/leonardovalentini/crypto-coins/crypto/domain"
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+        "github.com/leonardovalentini/crypto-coins/lib/logger"
+)
+
+//go:generate mockgen -destination=../tests/mocks/service/mockCoinsPriceService.go -package=service github.com/leonardovalentini/crypto-coins/crypto/service CoinsPriceService
+type CoinsPriceService interface {
+        GetPrices(ctx context.Context, userId string, gpr *dto.GetPricesRequest) ([]domain.Price, *int, *domain.Summary, error)
+        JobPrices(ctx context.Context)
+}
+
+type DefaultCoinsPriceService struct {
+        ucr    domain.UserCoinRepository
+        pr     domain.PriceRepository
+        bs     []domain.BrokerSite
+        logger logger.LoggerI
+        now    func() time.Time
+}
+
+func NewCoinsPriceService(ucr domain.UserCoinRepository, pr domain.PriceRepository, bs []domain.BrokerSite, l logger.LoggerI, n func() time.Time) CoinsPriceService <span class="cov8" title="1">{
+        return &amp;DefaultCoinsPriceService{ucr: ucr, pr: pr, bs: bs, logger: l, now: n}
+}</span>
+
+func (s *DefaultCoinsPriceService) GetPrices(ctx context.Context, userId string, gpr *dto.GetPricesRequest) ([]domain.Price, *int, *domain.Summary, error) <span class="cov8" title="1">{
+        prices, err := s.pr.FindAllBy(ctx, userId, gpr)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, nil, nil, err
+        }</span>
+        <span class="cov8" title="1">total, summary, err := s.pr.GetSummary(ctx, userId, gpr)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, nil, nil, err
+        }</span>
+        <span class="cov8" title="1">return prices, total, summary, nil</span>
+}
+
+func (s *DefaultCoinsPriceService) JobPrices(ctx context.Context) <span class="cov8" title="1">{
+        s.logger.SetCtx(ctx)
+        defer func() </span><span class="cov8" title="1">{
+                if err := recover(); err != nil </span><span class="cov8" title="1">{
+                        s.logger.Error(fmt.Sprintf("Encountered unexpected error: %v", err))
+                }</span>
+        }()
+
+        <span class="cov8" title="1">coins, err := s.ucr.FindDifferentsCoins(ctx)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("Error in JobPrices: " + err.Error())
+                return
+        }</span>
+
+        <span class="cov8" title="1">var wg sync.WaitGroup
+        for _, site := range s.bs </span><span class="cov8" title="1">{
+                wg.Add(1)
+                go func(ctx context.Context, site domain.BrokerSite, coins []domain.UserCoin) </span><span class="cov8" title="1">{
+                        defer wg.Done()
+
+                        s.getPricesBySite(ctx, site, coins)
+                }</span>(ctx, site, coins)
+        }
+        <span class="cov8" title="1">wg.Wait()</span>
+}
+
+func (s *DefaultCoinsPriceService) getPricesBySite(ctx context.Context, bs domain.BrokerSite, coins []domain.UserCoin) <span class="cov8" title="1">{
+        const maxConcurrency = 3
+
+        sem := make(chan struct{}, maxConcurrency)
+        var wg sync.WaitGroup
+
+        for _, coin := range coins </span><span class="cov8" title="1">{
+                wg.Add(1)
+                sem &lt;- struct{}{}
+
+                go func(ctx context.Context, bs domain.BrokerSite, coin domain.UserCoin) </span><span class="cov8" title="1">{
+                        defer wg.Done()
+                        defer func() </span><span class="cov8" title="1">{ &lt;-sem }</span>()
+
+                        <span class="cov8" title="1">s.getPricesBySiteAndCoin(ctx, bs, coin)</span>
+                }(ctx, bs, coin)
+
+        }
+        <span class="cov8" title="1">wg.Wait()</span>
+}
+
+func (s *DefaultCoinsPriceService) getPricesBySiteAndCoin(ctx context.Context, bs domain.BrokerSite, coin domain.UserCoin) <span class="cov8" title="1">{
+        defer func() </span><span class="cov8" title="1">{
+                if err := recover(); err != nil </span><span class="cov8" title="1">{
+                        s.logger.Error(fmt.Sprintf("Encountered unexpected error: %v", err))
+                }</span>
+        }()
+
+        <span class="cov8" title="1">price, err := bs.GetPrice(ctx, coin.Coin, coin.CoinRef)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("JobPrices: Unexpected error getting the price " + err.Error())
+                return
+        }</span>
+
+        <span class="cov8" title="1">p := domain.Price{
+                Coin:    coin.Coin,
+                CoinRef: coin.CoinRef,
+                Date:    s.now(),
+                Price:   *price,
+                Site:    bs.GetName(),
+        }
+
+        _, err = s.pr.Save(ctx, p)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("JobPrices: Unexpected error saving the price: " + err.Error())
+                return
+        }</span>
+        <span class="cov8" title="1">s.logger.Info(fmt.Sprintf("JobPrices: Price saved successfully for %s/%s from %s", coin.Coin, coin.CoinRef, bs.GetName()))</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package service
+
+import (
+        "context"
+        "strconv"
+
+        "github.com/leonardovalentini/crypto-coins/crypto/domain"
+        "github.com/leonardovalentini/crypto-coins/crypto/dto"
+        "github.com/leonardovalentini/crypto-coins/lib/errs"
+)
+
+//go:generate mockgen -destination=../tests/mocks/service/mockUserCoinService.go -package=service github.com/leonardovalentini/crypto-coins/crypto/service UserCoinService
+type UserCoinService interface {
+        GetAllUserCoinsByUserId(ctx context.Context, id string) ([]domain.UserCoin, error)
+        NewUserCoin(ctx context.Context, userId string, req dto.UserCoinRequest) (*dto.NewUserCoinResponse, error)
+        UpdateUserCoin(ctx context.Context, userId, userCoinId string, req dto.UserCoinRequest) (*domain.UserCoin, error)
+        DeleteUserCoin(ctx context.Context, userId, userCoinId string) error
+}
+
+type DefaultUserCoinService struct {
+        repo domain.UserCoinRepository
+}
+
+func NewUserCoinService(repository domain.UserCoinRepository) UserCoinService <span class="cov8" title="1">{
+        return &amp;DefaultUserCoinService{repo: repository}
+}</span>
+
+func (s *DefaultUserCoinService) GetAllUserCoinsByUserId(ctx context.Context, id string) ([]domain.UserCoin, error) <span class="cov8" title="1">{
+        return s.repo.FindAllByUserId(ctx, id)
+}</span>
+
+func (s *DefaultUserCoinService) NewUserCoin(ctx context.Context, userId string, req dto.UserCoinRequest) (*dto.NewUserCoinResponse, error) <span class="cov8" title="1">{
+        if err := req.Validate(); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">userCoins, err := s.repo.FindBy(ctx, userId, req.Coin, req.CoinRef)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if len(userCoins) != 0 </span><span class="cov8" title="1">{
+                return nil, errs.NewConflictError("The user has already added that coin")
+        }</span>
+
+        <span class="cov8" title="1">userCoin := domain.UserCoin{
+                UserId:  userId,
+                Coin:    req.Coin,
+                CoinRef: req.CoinRef,
+        }
+
+        newUserCoin, err := s.repo.Save(ctx, userCoin)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return newUserCoin.ToNewUserCoinResponseDto(), nil</span>
+}
+
+func (s *DefaultUserCoinService) UpdateUserCoin(ctx context.Context, userId, userCoinId string, req dto.UserCoinRequest) (*domain.UserCoin, error) <span class="cov8" title="1">{
+        if err := req.Validate(); err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">currentUserCoin, err := s.repo.FindByUserCoinId(ctx, userId, userCoinId)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">if currentUserCoin.Coin == req.Coin &amp;&amp; currentUserCoin.CoinRef == req.CoinRef </span><span class="cov8" title="1">{
+                return currentUserCoin, nil
+        }</span>
+
+        <span class="cov8" title="1">existUserCoin, err := s.repo.FindBy(ctx, userId, req.Coin, req.CoinRef)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">if len(existUserCoin) != 0 </span><span class="cov8" title="1">{
+                return nil, errs.NewConflictError("The user has already added that coin")
+        }</span>
+
+        <span class="cov8" title="1">userCoin := domain.UserCoin{
+                Id:      currentUserCoin.Id,
+                UserId:  currentUserCoin.UserId,
+                Coin:    req.Coin,
+                CoinRef: req.CoinRef,
+        }
+
+        updatedUserCoin, err := s.repo.Update(ctx, userCoin)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">return updatedUserCoin, nil</span>
+}
+
+func (s *DefaultUserCoinService) DeleteUserCoin(ctx context.Context, userId, userCoinId string) error <span class="cov8" title="1">{
+        userCoin, err := s.repo.FindByUserCoinId(ctx, userId, userCoinId)
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">err = s.repo.Delete(ctx, strconv.Itoa(userCoin.Id))
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

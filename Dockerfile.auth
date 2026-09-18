@@ -1,0 +1,25 @@
+# Stage 1: Build binary
+FROM golang:alpine3.24 AS builder
+# Install curl for health check
+# RUN apk add --no-cache curl 
+
+WORKDIR /app
+
+# Copy dependency manifests first to leverage Docker cache
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code and build
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o authApp ./auth/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o health-check ./health.go
+
+# Stage 2: Minimal final runtime image
+FROM scratch
+WORKDIR /
+COPY --from=builder /app/authApp /authApp
+COPY --from=builder /app/health-check /health-check
+
+EXPOSE 8080
+# Command to execute
+CMD ["./authApp"]

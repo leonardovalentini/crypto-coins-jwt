@@ -1,0 +1,383 @@
+definitions:
+  dto.EmptyResponse:
+    type: object
+  dto.NewUserCoinResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+  dto.PriceResponse:
+    properties:
+      coin:
+        example: btc
+        type: string
+      coin_ref:
+        example: eth
+        type: string
+      date:
+        example: "2026-08-19T18:33:34Z"
+        type: string
+      price:
+        example: 12.34
+        type: number
+      site:
+        example: CoinGecko
+        type: string
+    type: object
+  dto.PricesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dto.PriceResponse'
+        type: array
+      page:
+        example: 0
+        type: integer
+      size:
+        example: 10
+        type: integer
+      summary:
+        $ref: '#/definitions/dto.SummaryResponse'
+      total_items:
+        example: 1
+        type: integer
+      total_pages:
+        example: 1
+        type: integer
+    type: object
+  dto.SummaryResponse:
+    properties:
+      coin:
+        additionalProperties:
+          type: integer
+        example:
+          btc: 2
+          eth: 3
+        type: object
+      coin_ref:
+        additionalProperties:
+          type: integer
+        example:
+          ldc: 1
+          usd: 4
+        type: object
+      site:
+        additionalProperties:
+          type: integer
+        example:
+          CoinGecko: 4
+          CoinMarketCap: 1
+        type: object
+    type: object
+  dto.UserCoinRequest:
+    properties:
+      coin:
+        example: btc
+        type: string
+      coin_ref:
+        example: eth
+        type: string
+    type: object
+  dto.UserCoinResponse:
+    properties:
+      coin:
+        example: btc
+        type: string
+      coin_ref:
+        example: eth
+        type: string
+      id:
+        example: 1
+        type: integer
+    type: object
+  helpers.HttpError:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: This API allows you to keep a historical record of your favorite cryptocurrencies.
+  title: Crypto API
+  version: "1.0"
+paths:
+  /api/prices:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve filtered and paginated historical price lists.
+      parameters:
+      - default: 0
+        description: Page number starting 0
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: size
+        type: integer
+      - default: ""
+        description: 3-character code
+        example: btc
+        in: query
+        maxLength: 3
+        minLength: 3
+        name: coin
+        type: string
+      - default: ""
+        description: 3-character code
+        example: eth
+        in: query
+        maxLength: 3
+        minLength: 3
+        name: coin_ref
+        type: string
+      - description: Price
+        example: 12.34
+        in: query
+        minimum: 0
+        name: price
+        type: number
+      - default: ""
+        description: Start date (ISO-8601)
+        example: "2026-08-21T15:30:00Z"
+        format: date-time
+        in: query
+        name: start_date
+        type: string
+      - default: ""
+        description: End date (ISO-8601)
+        example: "2026-08-21T15:30:00Z"
+        format: date-time
+        in: query
+        name: end_date
+        type: string
+      - default: ""
+        description: Site
+        example: CoinGecko
+        in: query
+        name: site
+        type: string
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PricesResponse'
+        "401":
+          description: User id not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "422":
+          description: Invalid price value<br>Invalid start date value, should be
+            in ISO format<br>Invalid end date value, should be in ISO format<br>The
+            coin symbol must be three chars<br>The coin reference must be three chars<br>The
+            coin symbol must be three chars<br>The coin reference must be three chars<br>The
+            price shold be a positive number<br>The start date should be before today<br>The
+            end date should be before today<br>The start date should be before end
+            date
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error<br>Unexpected error from database
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Get historical price lists
+      tags:
+      - prices
+  /api/user-coins:
+    get:
+      consumes:
+      - application/json
+      description: returns all the coins configured by the user
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.UserCoinResponse'
+            type: array
+        "401":
+          description: User id not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Get user coins
+      tags:
+      - user-coins
+    post:
+      consumes:
+      - application/json
+      description: Adds a new currency configuration to the user's list.
+      parameters:
+      - description: Currency info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserCoinRequest'
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.NewUserCoinResponse'
+        "400":
+          description: Invalid request body<br>The coin symbol must be three chars<br>The
+            coin reference must be three chars
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "401":
+          description: User id not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "409":
+          description: The user has already added that coin
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "422":
+          description: The coin symbol must be three chars<br>The coin reference must
+            be three chars
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Add user coin
+      tags:
+      - user-coins
+  /api/user-coins/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete currency configuration to the user's list.
+      parameters:
+      - description: Currency ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EmptyResponse'
+        "401":
+          description: User id not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "404":
+          description: The coin was not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Delete user coin
+      tags:
+      - user-coins
+    put:
+      consumes:
+      - application/json
+      description: Update currency configuration to the user's list.
+      parameters:
+      - description: Currency ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Currency info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserCoinRequest'
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserCoinResponse'
+        "400":
+          description: Invalid request body<br>The coin symbol must be three chars<br>The
+            coin reference must be three chars
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "401":
+          description: User id not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "404":
+          description: The coin was not found
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "409":
+          description: The user has already added that coin
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "422":
+          description: The coin symbol must be three chars<br>The coin reference must
+            be three chars
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      security:
+      - CookieAuth: []
+      summary: Update user coin
+      tags:
+      - user-coins
+  /jobs/broker-prices:
+    get:
+      consumes:
+      - application/json
+      description: Job to complete current currency prices from brokers.
+      produces:
+      - application/json
+      - text/xml
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/dto.EmptyResponse'
+        "503":
+          description: Job is already running
+          schema:
+            $ref: '#/definitions/helpers.HttpError'
+      summary: Job to complete prices
+      tags:
+      - prices
+securityDefinitions:
+  CookieAuth:
+    in: cookie
+    name: session_token
+    type: apiKey
+swagger: "2.0"
