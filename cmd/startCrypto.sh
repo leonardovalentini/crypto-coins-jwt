@@ -1,0 +1,2 @@
+clear;
+GECKO_API_KEY=key CMC_API_KEY=key SERVER_ADDRESS=localhost AUTH_PORT=8181 SERVER_PORT=8080 DB_USER=root DB_PASSWORD=secure_password DB_HOST=localhost DB_PORT=3306 DB_NAME=crypto go run crypto/main.go
